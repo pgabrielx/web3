@@ -1,0 +1,250 @@
+import java.io.*;
+import java.util.*;
+
+// =======================
+// 1. CLASSE CONTATO
+// =======================
+class Contato {
+    private String nome;
+    private String telefone;
+    private String email;
+
+    public Contato(String nome, String telefone, String email) {
+        this.nome = nome;
+        this.telefone = telefone;
+        this.email = email;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
+    public String getTelefone() {
+        return telefone;
+    }
+
+    public void setTelefone(String telefone) {
+        this.telefone = telefone;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    @Override
+    public String toString() {
+        return nome + " | " + telefone + " | " + email;
+    }
+}
+
+// =======================
+// 2. EXCEÇÕES PERSONALIZADAS
+// =======================
+class ContatoExistenteException extends Exception {
+    public ContatoExistenteException(String msg) {
+        super(msg);
+    }
+}
+
+class ContatoNaoEncontradoException extends Exception {
+    public ContatoNaoEncontradoException(String msg) {
+        super(msg);
+    }
+}
+
+// =======================
+// 3. INTERFACE GERENCIADOR
+// =======================
+interface GerenciadorContatos {
+    void adicionarContato(Contato contato) throws ContatoExistenteException;
+    Contato buscarContato(String nome) throws ContatoNaoEncontradoException;
+    void removerContato(String nome) throws ContatoNaoEncontradoException;
+    List<Contato> listarTodosContatos();
+}
+
+// =======================
+// 4. CLASSE AGENDA MANAGER
+// =======================
+class AgendaManager implements GerenciadorContatos {
+
+    private List<Contato> contatos = new ArrayList<>();
+
+    @Override
+    public void adicionarContato(Contato contato) throws ContatoExistenteException {
+        for (Contato c : contatos) {
+            if (c.getNome().equalsIgnoreCase(contato.getNome())) {
+                throw new ContatoExistenteException("Contato já existe: " + contato.getNome());
+            }
+        }
+        contatos.add(contato);
+    }
+
+    @Override
+    public Contato buscarContato(String nome) throws ContatoNaoEncontradoException {
+        for (Contato c : contatos) {
+            if (c.getNome().equalsIgnoreCase(nome)) {
+                return c;
+            }
+        }
+        throw new ContatoNaoEncontradoException("Contato não encontrado: " + nome);
+    }
+
+    @Override
+    public void removerContato(String nome) throws ContatoNaoEncontradoException {
+        Contato c = buscarContato(nome);
+        contatos.remove(c);
+    }
+
+    @Override
+    public List<Contato> listarTodosContatos() {
+        return contatos;
+    }
+
+    public void salvarContatosCSV(String nomeArquivo) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(nomeArquivo))) {
+
+            for (Contato c : contatos) {
+                writer.write(c.getNome() + ";" + c.getTelefone() + ";" + c.getEmail());
+                writer.newLine();
+            }
+
+            System.out.println("Contatos salvos em: " + nomeArquivo);
+
+        } catch (IOException e) {
+            System.out.println("Erro ao salvar CSV: " + e.getMessage());
+        }
+    }
+
+    public void carregarContatosCSV(String nomeArquivo) {
+        contatos.clear();
+        try (BufferedReader reader = new BufferedReader(new FileReader(nomeArquivo))) {
+            String linha;
+            while ((linha = reader.readLine()) != null) {
+                String[] partes = linha.split(";");
+                if (partes.length == 3) {
+                    contatos.add(new Contato(partes[0], partes[1], partes[2]));
+                }
+            }
+            System.out.println("Contatos carregados de: " + nomeArquivo);
+        } catch (IOException e) {
+            System.out.println("Erro ao carregar CSV: " + e.getMessage());
+        }
+    }
+}
+
+// =======================
+// 5. AGENDA APPLICATION (MENU PRINCIPAL)
+// =======================
+public class AgendaApplication {
+
+    public static void main(String[] args) {
+
+        Scanner scanner = new Scanner(System.in);
+        AgendaManager agenda = new AgendaManager();
+        int opcao = 0;
+
+        while (opcao != 7) {
+            System.out.println("\n===== AGENDA ELETRÔNICA =====");
+            System.out.println("1. Adicionar Contato");
+            System.out.println("2. Buscar Contato");
+            System.out.println("3. Remover Contato");
+            System.out.println("4. Listar Todos os Contatos");
+            System.out.println("5. Salvar em CSV");
+            System.out.println("6. Carregar de CSV");
+            System.out.println("7. Sair");
+            System.out.print("Escolha uma opção: ");
+
+            try {
+                opcao = Integer.parseInt(scanner.nextLine());
+            } catch (Exception e) {
+                System.out.println("Entrada inválida! Digite um número.");
+                continue;
+            }
+
+            switch (opcao) {
+
+                case 1: {
+                    System.out.print("Nome: ");
+                    String nome = scanner.nextLine();
+
+                    System.out.print("Telefone: ");
+                    String telefone = scanner.nextLine();
+
+                    System.out.print("Email: ");
+                    String email = scanner.nextLine();
+
+                    try {
+                        agenda.adicionarContato(new Contato(nome, telefone, email));
+                        System.out.println("Contato adicionado com sucesso!");
+                    } catch (ContatoExistenteException e) {
+                        System.out.println(e.getMessage());
+                    }
+                    break;
+                }
+
+                case 2: {
+                    System.out.print("Nome para buscar: ");
+                    String nome = scanner.nextLine();
+                    try {
+                        Contato c = agenda.buscarContato(nome);
+                        System.out.println("Encontrado: " + c);
+                    } catch (ContatoNaoEncontradoException e) {
+                        System.out.println(e.getMessage());
+                    }
+                    break;
+                }
+
+                case 3: {
+                    System.out.print("Nome para remover: ");
+                    String nome = scanner.nextLine();
+                    try {
+                        agenda.removerContato(nome);
+                        System.out.println("Contato removido.");
+                    } catch (ContatoNaoEncontradoException e) {
+                        System.out.println(e.getMessage());
+                    }
+                    break;
+                }
+
+                case 4: {
+                    System.out.println("\n=== Lista de Contatos ===");
+                    for (Contato c : agenda.listarTodosContatos()) {
+                        System.out.println(c);
+                    }
+                    break;
+                }
+
+                case 5: {
+                    System.out.print("Nome do arquivo CSV: ");
+                    String arquivo = scanner.nextLine();
+                    agenda.salvarContatosCSV(arquivo);
+                    break;
+                }
+
+                case 6: {
+                    System.out.print("Nome do arquivo CSV para carregar: ");
+                    String arquivo = scanner.nextLine();
+                    agenda.carregarContatosCSV(arquivo);
+                    break;
+                }
+
+                case 7:
+                    System.out.println("Saindo...");
+                    break;
+
+                default:
+                    System.out.println("Opção inválida! Escolha entre 1 e 7.");
+            }
+        }
+
+        scanner.close();
+    }
+}
