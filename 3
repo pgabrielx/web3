@@ -1,0 +1,181 @@
+import java.io.*;
+import java.util.*;
+
+// =======================
+// 1. CLASSE CONTATO
+// =======================
+class Contato {
+    private String nome;
+    private String telefone;
+    private String email;
+
+    public Contato(String nome, String telefone, String email) {
+        this.nome = nome;
+        this.telefone = telefone;
+        this.email = email;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
+    public String getTelefone() {
+        return telefone;
+    }
+
+    public void setTelefone(String telefone) {
+        this.telefone = telefone;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    @Override
+    public String toString() {
+        return nome + " | " + telefone + " | " + email;
+    }
+}
+
+// =======================
+// 2. EXCEÇÕES PERSONALIZADAS
+// =======================
+class ContatoExistenteException extends Exception {
+    public ContatoExistenteException(String msg) {
+        super(msg);
+    }
+}
+
+class ContatoNaoEncontradoException extends Exception {
+    public ContatoNaoEncontradoException(String msg) {
+        super(msg);
+    }
+}
+
+// =======================
+// 3. INTERFACE GERENCIADOR
+// =======================
+interface GerenciadorContatos {
+    void adicionarContato(Contato contato) throws ContatoExistenteException;
+
+    Contato buscarContato(String nome) throws ContatoNaoEncontradoException;
+
+    void removerContato(String nome) throws ContatoNaoEncontradoException;
+
+    List<Contato> listarTodosContatos();
+}
+
+// =======================
+// 4. CLASSE AGENDA MANAGER
+// =======================
+class AgendaManager implements GerenciadorContatos {
+
+    private List<Contato> contatos = new ArrayList<>();
+
+    @Override
+    public void adicionarContato(Contato contato) throws ContatoExistenteException {
+        for (Contato c : contatos) {
+            if (c.getNome().equalsIgnoreCase(contato.getNome())) {
+                throw new ContatoExistenteException("Contato já existe: " + contato.getNome());
+            }
+        }
+        contatos.add(contato);
+    }
+
+    @Override
+    public Contato buscarContato(String nome) throws ContatoNaoEncontradoException {
+        for (Contato c : contatos) {
+            if (c.getNome().equalsIgnoreCase(nome)) {
+                return c;
+            }
+        }
+        throw new ContatoNaoEncontradoException("Contato não encontrado: " + nome);
+    }
+
+    @Override
+    public void removerContato(String nome) throws ContatoNaoEncontradoException {
+        Contato c = buscarContato(nome);
+        contatos.remove(c);
+    }
+
+    @Override
+    public List<Contato> listarTodosContatos() {
+        return contatos;
+    }
+
+    // =======================
+    // 5. SALVAR EM CSV
+    // =======================
+    public void salvarContatosCSV(String nomeArquivo) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(nomeArquivo))) {
+
+            for (Contato c : contatos) {
+                String linha = c.getNome() + ";" + c.getTelefone() + ";" + c.getEmail();
+                writer.write(linha);
+                writer.newLine();
+            }
+
+            System.out.println("Contatos salvos em: " + nomeArquivo);
+
+        } catch (IOException e) {
+            System.out.println("Erro ao salvar CSV: " + e.getMessage());
+        }
+    }
+
+    // =======================
+    // 6. CARREGAR DE CSV
+    // =======================
+    public void carregarContatosCSV(String nomeArquivo) {
+        contatos.clear();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(nomeArquivo))) {
+
+            String linha;
+
+            while ((linha = reader.readLine()) != null) {
+                String[] partes = linha.split(";");
+
+                if (partes.length == 3) {
+                    Contato c = new Contato(partes[0], partes[1], partes[2]);
+                    contatos.add(c);
+                }
+            }
+
+            System.out.println("Contatos carregados de: " + nomeArquivo);
+
+        } catch (IOException e) {
+            System.out.println("Erro ao carregar CSV: " + e.getMessage());
+        }
+    }
+}
+
+// =======================
+// 7. CLASSE PRINCIPAL (OPCIONAL PARA TESTE)
+// =======================
+public class Main {
+    public static void main(String[] args) {
+        AgendaManager agenda = new AgendaManager();
+
+        try {
+            agenda.adicionarContato(new Contato("Ana", "1111-1111", "ana@email"));
+            agenda.adicionarContato(new Contato("Bruno", "2222-2222", "bruno@email"));
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+
+        agenda.salvarContatosCSV("contatos.csv");
+        agenda.carregarContatosCSV("contatos.csv");
+
+        for (Contato c : agenda.listarTodosContatos()) {
+            System.out.println(c);
+        }
+    }
+}
