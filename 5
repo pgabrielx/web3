@@ -1,0 +1,95 @@
+class AgendaManager implements GerenciadorContatos {
+
+    private List<Contato> contatos = new ArrayList<>();
+
+    @Override
+    public void adicionarContato(Contato contato) throws ContatoExistenteException {
+        for (Contato c : contatos) {
+            if (c.getNome().equalsIgnoreCase(contato.getNome())) {
+                throw new ContatoExistenteException("Contato já existe: " + contato.getNome());
+            }
+        }
+        contatos.add(contato);
+    }
+
+    @Override
+    public Contato buscarContato(String nome) throws ContatoNaoEncontradoException {
+        for (Contato c : contatos) {
+            if (c.getNome().equalsIgnoreCase(nome)) {
+                return c;
+            }
+        }
+        throw new ContatoNaoEncontradoException("Contato não encontrado: " + nome);
+    }
+
+    @Override
+    public void removerContato(String nome) throws ContatoNaoEncontradoException {
+        Contato c = buscarContato(nome);
+        contatos.remove(c);
+    }
+
+    @Override
+    public List<Contato> listarTodosContatos() {
+        return contatos;
+    }
+
+    // ===========================
+    //  NOVO MÉTODO 1:
+    //  LISTAR CONTATOS ORDENADOS
+    // ===========================
+    public List<Contato> listarContatosOrdenados() {
+        List<Contato> ordenada = new ArrayList<>(contatos);
+        ordenada.sort(Comparator.comparing(Contato::getNome, String.CASE_INSENSITIVE_ORDER)); 
+        return ordenada;
+    }
+
+    // ===========================
+    //  NOVO MÉTODO 2:
+    //  BUSCAR POR DOMÍNIO DE EMAIL
+    // ===========================
+    public List<Contato> buscarPorDominioEmail(String dominio) {
+        List<Contato> resultado = new ArrayList<>();
+
+        for (Contato c : contatos) {
+            if (c.getEmail().toLowerCase().endsWith("@" + dominio.toLowerCase())) {
+                resultado.add(c);
+            }
+        }
+
+        return resultado;
+    }
+
+    // =======================
+    //  SALVAR CSV
+    // =======================
+    public void salvarContatosCSV(String nomeArquivo) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(nomeArquivo))) {
+            for (Contato c : contatos) {
+                writer.write(c.getNome() + ";" + c.getTelefone() + ";" + c.getEmail());
+                writer.newLine();
+            }
+            System.out.println("Contatos salvos em: " + nomeArquivo);
+        } catch (IOException e) {
+            System.out.println("Erro ao salvar CSV: " + e.getMessage());
+        }
+    }
+
+    // =======================
+    //  CARREGAR CSV
+    // =======================
+    public void carregarContatosCSV(String nomeArquivo) {
+        contatos.clear();
+        try (BufferedReader reader = new BufferedReader(new FileReader(nomeArquivo))) {
+            String linha;
+            while ((linha = reader.readLine()) != null) {
+                String[] partes = linha.split(";");
+                if (partes.length == 3) {
+                    contatos.add(new Contato(partes[0], partes[1], partes[2]));
+                }
+            }
+            System.out.println("Contatos carregados de: " + nomeArquivo);
+        } catch (IOException e) {
+            System.out.println("Erro ao carregar CSV: " + e.getMessage());
+        }
+    }
+}
