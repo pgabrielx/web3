@@ -1,0 +1,151 @@
+import java.util.ArrayList;
+import java.util.List;
+
+// =====================
+// Classe Contato
+// =====================
+class Contato {
+    private String nome;
+    private String telefone;
+    private String email;
+
+    public Contato(String nome, String telefone, String email) {
+        this.nome = nome;
+        this.telefone = telefone;
+        this.email = email;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public String getTelefone() {
+        return telefone;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
+    public void setTelefone(String telefone) {
+        this.telefone = telefone;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    @Override
+    public String toString() {
+        return "Nome: " + nome +
+               ", Telefone: " + telefone +
+               ", Email: " + email;
+    }
+}
+
+// =====================
+// Exceções Personalizadas
+// =====================
+class ContatoExistenteException extends Exception {
+    public ContatoExistenteException(String mensagem) {
+        super(mensagem);
+    }
+}
+
+class ContatoNaoEncontradoException extends Exception {
+    public ContatoNaoEncontradoException(String mensagem) {
+        super(mensagem);
+    }
+}
+
+// =====================
+// Interface GerenciadorContatos
+// =====================
+interface GerenciadorContatos {
+    void adicionarContato(Contato contato) throws ContatoExistenteException;
+    Contato buscarContato(String nome) throws ContatoNaoEncontradoException;
+    void removerContato(String nome) throws ContatoNaoEncontradoException;
+    List<Contato> listarTodosContatos();
+}
+
+// =====================
+// Classe AgendaManager
+// =====================
+class AgendaManager implements GerenciadorContatos {
+
+    private List<Contato> contatos;
+
+    public AgendaManager() {
+        this.contatos = new ArrayList<>();
+    }
+
+    @Override
+    public void adicionarContato(Contato contato) throws ContatoExistenteException {
+        for (Contato c : contatos) {
+            if (c.getNome().equalsIgnoreCase(contato.getNome())) {
+                throw new ContatoExistenteException(
+                    "Já existe um contato com o nome: " + contato.getNome()
+                );
+            }
+        }
+        contatos.add(contato);
+    }
+
+    @Override
+    public Contato buscarContato(String nome) throws ContatoNaoEncontradoException {
+        for (Contato c : contatos) {
+            if (c.getNome().equalsIgnoreCase(nome)) {
+                return c;
+            }
+        }
+        throw new ContatoNaoEncontradoException("Contato não encontrado: " + nome);
+    }
+
+    @Override
+    public void removerContato(String nome) throws ContatoNaoEncontradoException {
+        Contato contato = buscarContato(nome);
+        contatos.remove(contato);
+    }
+
+    @Override
+    public List<Contato> listarTodosContatos() {
+        return new ArrayList<>(contatos);
+    }
+}
+
+// =====================
+// Classe Main (opcional para teste)
+// =====================
+public class AgendaCompleta {
+    public static void main(String[] args) {
+        try {
+            AgendaManager agenda = new AgendaManager();
+
+            agenda.adicionarContato(new Contato("João", "1111-1111", "joao@email"));
+            agenda.adicionarContato(new Contato("Maria", "2222-2222", "maria@email"));
+
+            System.out.println("=== Lista de Contatos ===");
+            for (Contato c : agenda.listarTodosContatos()) {
+                System.out.println(c);
+            }
+
+            System.out.println("\nBuscando João:");
+            System.out.println(agenda.buscarContato("João"));
+
+            System.out.println("\nRemovendo João...");
+            agenda.removerContato("João");
+
+            System.out.println("\n=== Lista Atualizada ===");
+            for (Contato c : agenda.listarTodosContatos()) {
+                System.out.println(c);
+            }
+
+        } catch (Exception e) {
+            System.out.println("Erro: " + e.getMessage());
+        }
+    }
+}
